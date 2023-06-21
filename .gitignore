@@ -152,5 +152,8 @@ cython_debug/
 #.idea/
 
 
-#vscode
+# vscode
 .vscode/
+
+# Testing
+passInfo.txt
