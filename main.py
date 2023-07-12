@@ -1,95 +1,147 @@
+import re
 import os
+from databaseConn import DbConnection
 
 
-# Register function
-def register():
-    userName = input('User Name : ')
-    password = input('Password : ')
-    with open('passInfo.txt',
-              'a') as f:  # Create a new file if it was not already exist and insert inside it the registration info.
-        f.write('\n' + userName + '\n')
-        f.write(password)
-        f.close()
-    os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
-    print('''Done
-            ---------------------''')
+def print_center(string):
+    try:
+        terminal_width = os.get_terminal_size().columns
+    except OSError:
+        terminal_width = 80  # Fallback value if terminal size cannot be determined
+
+    padding = (terminal_width - len(string)) // 2
+    print(" " * padding + string)
 
 
-# Login function
-def login():
-    userName = input('User Name : ')
-    password = input('Password : ')
-    with open('passInfo.txt', 'r') as f:  # Open the passInfo.txt file and search for the registration info inside it.
-        flag = True  # A variable to check if the operation is done or not.
-        while flag:  # A While loop to loop over all contents of the file.
-            un = f.readline().strip()
-            pw = f.readline().strip()
-            if un != '':  # To check if the content didn't over yet.
-                if (un == userName) and (pw == password):
-                    os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
-                    print('Successfully Login')
-                    break
-            else:
-                flag = False  # Change the variable value to the operation is done.
+# To contain screens.
+class Screens:
+    def __init__(self):
+        self.username = ""
+        self.password = ""
 
-        if flag:  # To check if the operation did work and to go the new screen.
-            afterLogin(un)
-        else:
-            print('Wrong login information')
-        f.close()
+    # To take user details input.
+    def userDetails(self):
+        self.username = input("Your username: ")
+        self.password = input("Your password: ")
 
-
-# The new screen after the login
-def afterLogin(username):
-    print(f"Hi {username}")
-    print("What do you want to do ?. \n1:Logout \n2:Delete a user")
-    choice = input("You choice >> ")
-    if choice == '1':
-        os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
-        mainMenu()
-    elif choice == '2':
-        deleteUser(username)
-
-
-# The function to delete a user
-def deleteUser(us):
-    userName = input('User Name : ')
-    password = input('Password : ')
-    flag = True  # A variable to check if the operation is done or not.
-    with open('passInfo.txt', 'r+') as f:
-        contents = f.readlines()  # To get the content of the file in a list to search for the users' info.
-        for word in contents:
-            if word.strip() == userName:  # To check if the username is correct.
-                index = contents.index(word)
-                if contents[index + 1][:-1] == password:  # To check if the password is correct.
-                    del contents[index]  # Deleting the username.
-                    del contents[index]  # Deleting the password.
-                    flag = False  # Change the variable value to the operation is done.
-                    break
-        if flag:  # To check if the operation didn't work.
-            print('There is no user with this Username or Password')
-        else:  # Rewrite the file with the new contents.
-            f.seek(0)
-            f.writelines(contents)
-            f.truncate()
-            f.close()
+    # First screen will apper when the program start
+    def mainScreen(self):
+        print_center("---Welcome---")
+        print("1: Register \n2: Login \n3: Exist")
+        choice = input("Your choice >> ")
+        if choice == '1':  # First check if the user chose to register (1).
             os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
-            afterLogin(us)
+            self.registrationScreen()
+        elif choice == '2':  # The user chose to log in (2), then the blew code well work.
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            self.logInScreen()
+        elif choice == '3':  # the user chose to exist (3).
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--Bye-->")
+            exit()
+        else:  # The user enter something else.
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--Invalid input!-->")
+            self.mainScreen()
 
+    # The activity screen after successfully log in.
+    def activityScreen(self):
+        print_center(f"Hi {self.username}")
+        print("What do you want to do ?. \n1:Modify your account. \n2:Delete your account \n3:Logout")
+        choice = input("You choice >> ")
+        if choice == '1':  # If the user chose to modify his/her account.
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            self.modifyScreen()
+        elif choice == '2':  # If the user chose to delete his/her account.
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            self.deleteUserScreen()
+        elif choice == '3':  # If the user chose to log out.
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--You have LOGGED OUT!-->")
+            self.mainScreen()
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--Invalid Input!-->")
+            self.activityScreen()
 
-# This function display the main menu that tells the user the options.
-def mainMenu():
-    print("---Welcome---")
-    print("1: Register \n2: Login \n3: Exist")
-    choice = input("You choice >> ")
-    if choice == '1':  # First check if the user's choice is register (1).
-        register()
-        mainMenu()  # Rerun the function so if the user want to register again or login.
-    elif choice == '2':  # The user's choice is login (2), then the blew code well work.
-        login()
-    else:
-        exit()
+    # The delete screen after the user choice to delete his account from activity screen.
+    def deleteUserScreen(self):
+        choice = input("Are you sure to delete your account?:(y/n)")
+        if choice == "y":
+            db = DbConnection(self.username)
+            db.deleteUser()
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print("The account have been successfully deleted!")
+            self.mainScreen()  # Return to the main screen because his account is no longer available.
+        elif choice == "n":
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            self.activityScreen()
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--Invalid input!-->")
+            self.deleteUserScreen()  # Return him to same screen again to late him try again.
+
+    # The modify screen after the user choice to modify his account from activity screen.
+    def modifyScreen(self):
+        choice1 = input("Are you sure to modify your account?:(y/n)")
+        if choice1 == "y":
+            choice2 = input("""What do you want to modify?. 
+1:USERNAME. 
+2:PASSWORD. 
+* If you want to modify both of them 
+  return to activity screen and chose 'Delete your account' 
+  after that register with the new delete.
+Your choice: """)
+            if choice2 == "1" or choice2 == "2":
+                db = DbConnection(self.username)
+                db.modifyUser(choice2)
+                print_center("<--The account have been successfully modified!-->")
+                os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+                self.mainScreen()
+            else:
+                os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+                print_center("<--Invalid input!-->")
+                self.modifyScreen()  # Return him to same screen again to late him try again.
+        elif choice1 == "n":
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            self.activityScreen()
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--Invalid input!-->")
+            self.modifyScreen()  # Return him to same screen again to late him try again.
+
+    # Registration class.
+    # This screen will apper if the user chose to register.
+    def registrationScreen(self):
+        pattern = r"^[a-zA-Z]+[0-9]+$"  # The correct pattern of username.
+        self.userDetails()
+        # To check if the username in correct length and pattern.
+        if len(self.username) >= 7 and re.match(pattern, self.username):
+            db = DbConnection(self.username, self.password)  # Create an instance and connection for the database.
+            db.registrationChecker(
+                self.registrationScreen)  # Check if the details are already in the database and if not save them in it.
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--The registration have done successfully!-->")
+            self.mainScreen()  # Return to the main screen.
+        else:  # If the username isn't matching the conditions
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--The username didn't meet the conditions!-->")
+            self.registrationScreen()  # Return to Registration Screen to let the user try again.
+
+    # Log in class
+    # This screen will apper if the user chose to log in.
+    def logInScreen(self):
+        self.userDetails()
+        db = DbConnection(self.username, self.password)  # Create an instance and connection for the database.
+        if db.logInChecker():
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            self.activityScreen()  # Go to the activity screen.
+        else:
+            os.system('cls' if os.name == 'nt' else 'clear')  # Clear the terminal screen
+            print_center("<--The username or password is wrong!-->")
+            self.logInScreen()  # Return to the log in screen.
 
 
 if __name__ == "__main__":
-    mainMenu()
+    start = Screens()
+    start.mainScreen()

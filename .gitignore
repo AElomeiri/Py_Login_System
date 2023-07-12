@@ -156,4 +156,7 @@ cython_debug/
 .vscode/
 
 # Testing
-passInfo.txt
+exam.py
+
+# Database
+*.db
